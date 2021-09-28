@@ -6,17 +6,18 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using secure.Models;
 
 namespace secure.Areas.Identity.Pages.Account.Manage
 {
     public partial class IndexModel : PageModel
     {
-        private readonly UserManager<IdentityUser> _userManager;
-        private readonly SignInManager<IdentityUser> _signInManager;
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly SignInManager<ApplicationUser> _signInManager;
 
         public IndexModel(
-            UserManager<IdentityUser> userManager,
-            SignInManager<IdentityUser> signInManager)
+            UserManager<ApplicationUser> userManager,
+            SignInManager<ApplicationUser> signInManager)
         {
             _userManager = userManager;
             _signInManager = signInManager;
@@ -35,18 +36,28 @@ namespace secure.Areas.Identity.Pages.Account.Manage
             [Phone]
             [Display(Name = "Phone number")]
             public string PhoneNumber { get; set; }
+            [Display(Name = "Bank Name")]
+            public string BankName { get; set; }
+            [Display(Name = "Account Number")]
+            public string BankNumber { get; set; }
         }
 
-        private async Task LoadAsync(IdentityUser user)
+        private async Task LoadAsync(ApplicationUser user)
         {
+            
             var userName = await _userManager.GetUserNameAsync(user);
             var phoneNumber = await _userManager.GetPhoneNumberAsync(user);
+            var bankName = user.BankName;
+            var bankNumber = user.BankNumber.ToString();
 
             Username = userName;
 
             Input = new InputModel
             {
-                PhoneNumber = phoneNumber
+                PhoneNumber = phoneNumber,
+                BankName = bankName,
+                BankNumber = bankNumber
+
             };
         }
 
@@ -77,6 +88,8 @@ namespace secure.Areas.Identity.Pages.Account.Manage
             }
 
             var phoneNumber = await _userManager.GetPhoneNumberAsync(user);
+            var bankName = user.BankName;
+            var bankNumber = user.BankNumber.ToString();
             if (Input.PhoneNumber != phoneNumber)
             {
                 var setPhoneResult = await _userManager.SetPhoneNumberAsync(user, Input.PhoneNumber);
@@ -86,7 +99,36 @@ namespace secure.Areas.Identity.Pages.Account.Manage
                     return RedirectToPage();
                 }
             }
+            if (Input.BankName != bankName)
+            {
+                user.BankName = Input.BankName;
+                var res = await _userManager.UpdateAsync(user);
+                if (!res.Succeeded)
+                {
+                    StatusMessage = "Unexpected error when trying to set Bank Name";
+                    return RedirectToPage();
+                }
+            }
+            if (Input.BankNumber != bankNumber)
+            {
+                try
+                {
+                    user.BankNumber = Convert.ToInt64(Input.BankNumber);
+                    var res = await _userManager.UpdateAsync(user);
+                    if (!res.Succeeded)
+                    {
+                        StatusMessage = "Unexpected error when trying to set Bank Number";
+                        return RedirectToPage();
+                    }
+                }catch(FormatException e)
+                {
+                    StatusMessage = "Unexpected error when trying to set Bank Number";
+                    return RedirectToPage();
+                }
 
+            }
+
+            
             await _signInManager.RefreshSignInAsync(user);
             StatusMessage = "Your profile has been updated";
             return RedirectToPage();

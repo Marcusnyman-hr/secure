@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using secure.Data;
+using secure.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,7 +23,7 @@ namespace secure
 
                 var scope = host.Services.CreateScope();
                 var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+                var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
                 var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 
                 context.Database.EnsureCreated();
@@ -36,7 +37,7 @@ namespace secure
                 }
                 if (!context.Users.Any(u => u.UserName == "admin"))
                 {
-                    var adminUser = new IdentityUser
+                    var adminUser = new ApplicationUser
                     {
                         UserName = "admin@gmail.com",
                         Email = "admin@gmail.com",
@@ -44,7 +45,7 @@ namespace secure
                     };
                     userManager.CreateAsync(adminUser, "Password123456*").GetAwaiter().GetResult();
                     userManager.AddToRoleAsync(adminUser, adminRole.Name).GetAwaiter().GetResult();
-                    var normalUser = new IdentityUser
+                    var normalUser = new ApplicationUser
                     {
                         UserName = "user@gmail.com",
                         Email = "user@gmail.com",
